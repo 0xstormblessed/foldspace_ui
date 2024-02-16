@@ -1,7 +1,7 @@
 
 import * as dotenv from 'dotenv'
 dotenv.config()
-import { createPublicClient, http, getAddress } from 'viem'
+import { createPublicClient, createWalletClient, http, getAddress } from 'viem'
 import { abi as FoldSpaceAbi } from '../abi/FoldSpace.json'
 import { optimism } from 'viem/chains'
 

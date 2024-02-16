@@ -12,16 +12,14 @@ import {
     useWriteContract, 
     useWaitForTransactionReceipt 
 } from 'wagmi';
-import { formatEther } from 'viem'
-import { abi } from "../abi/FoldSpace.json";
+import { formatEther, parseEther } from 'viem'
+import FoldSpace from "../abi/FoldSpace.json";
 
 
 const FOLDSPACE_CONTRACT = process.env.NEXT_PUBLIC_FOLDSPACE_ADDRESS;
 
-const wagmiContractConfig = {
-    address: FOLDSPACE_CONTRACT as `0x${string}`,
-    abi,
-};
+console.log('FOLDSPACE_CONTRACT:', FOLDSPACE_CONTRACT);
+
 
 const Home: NextPage = () => {
     const { address, isConnected } = useAccount();
@@ -29,6 +27,11 @@ const Home: NextPage = () => {
     const { data: balance, isError, isLoading } = useBalance({
         address: address
     });
+
+    const wagmiContractConfig = {
+        address: FOLDSPACE_CONTRACT as `0x${string}`,
+        abi: FoldSpace.abi,
+    };
 
     const { data, isLoading: isLoadingPrice } = useReadContract({
         ...wagmiContractConfig,
@@ -46,12 +49,14 @@ const Home: NextPage = () => {
         if (FOLDSPACE_CONTRACT === undefined) {
             throw new Error('FOLDSPACE_CONTRACT is not defined');
         }
+        console.log(`sending transaction with price: ${price}...`);
+        console.log('wagmiContractConfig:', wagmiContractConfig);
         
         writeContract({
             ...wagmiContractConfig,
             functionName: 'mint',
             args: [],
-            value: price,
+            value: BigInt(price),
         });
     }
 
@@ -87,11 +92,11 @@ const Home: NextPage = () => {
                             <button disabled={isPending} type="submit">
                                 { isPending ? 'Confirming...' : 'Mint'} 
                             </button>
-                            { hash && <div>Transaction Hash: {hash}</div>}
+                            { hash && <div>Transaction: https://optimistic.etherscan.io/tx/{hash}</div>}
                             {isConfirming && <div>Waiting for confirmation...</div>} 
                             {isConfirmed && <div>Transaction confirmed.</div>} 
                             {error && ( 
-                                <div>Error: {(error as BaseError).shortMessage || error.message}</div> 
+                                <div>Error: {(error as BaseError).stack || error.message}</div> 
                             )}
                         </form>
                         

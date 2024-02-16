@@ -9,9 +9,9 @@ import { optimism } from 'viem/chains'
 async function main() {
     console.log("example calling foldspace contract in RPC URL\n")
     console.log("RPC URL: ", process.env.OPTIMISM_RPC_URL)
-    console.log("FoldSpace Contract Address: ", process.env.FOLDSPACE_ADDRESS)
+    console.log("FoldSpace Contract Address: ", process.env.NEXT_PUBLIC_FOLDSPACE_ADDRESS)
 
-    const foldSpaceContractAddress = getAddress(process.env.FOLDSPACE_ADDRESS || '')
+    const foldSpaceContractAddress = getAddress(process.env.NEXT_PUBLIC_FOLDSPACE_ADDRESS || '')
 
     // create a public client
     const publicClient = createPublicClient({
@@ -21,7 +21,7 @@ async function main() {
             multicall: true, 
         },
         chain: optimism,
-        transport: http(process.env.OPTIMISM_RPC_URL),
+        transport: http(process.env.NEXT_PUBLIC_OPTIMISM_RPC_URL),
     })
 
     const blockNumber = await publicClient.getBlockNumber() 
