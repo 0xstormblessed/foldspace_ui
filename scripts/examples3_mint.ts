@@ -1,13 +1,21 @@
 
 import * as dotenv from 'dotenv'
 dotenv.config()
-import { createPublicClient, createWalletClient, http, getAddress } from 'viem'
+import { createPublicClient, createWalletClient, http, getAddress, formatGwei } from 'viem'
 import { abi as FoldSpaceAbi } from '../abi/FoldSpace.json'
 import { optimism } from 'viem/chains'
+import { privateKeyToAccount } from 'viem/accounts'
+import { english, generateMnemonic, mnemonicToAccount } from 'viem/accounts'
+
+ 
+const mnemonic = generateMnemonic(english)
+console.log("mnemonic: ", mnemonic);
+const account = mnemonicToAccount(mnemonic)
+console.log("mnemonic: ", account.address)
 
 
 async function main() {
-    console.log("example calling foldspace contract in RPC URL\n")
+    console.log("mint example\n")
     console.log("RPC URL: ", process.env.NEXT_PUBLIC_OPTIMISM_RPC_URL)
     console.log("FoldSpace Contract Address: ", process.env.NEXT_PUBLIC_FOLDSPACE_ADDRESS)
 
@@ -24,10 +32,28 @@ async function main() {
         transport: http(process.env.NEXT_PUBLIC_OPTIMISM_RPC_URL),
     })
 
-    const blockNumber = await publicClient.getBlockNumber() 
-    console.log("Block Number: ", blockNumber)
+    // SETUP WALLET CLIENT
+    const privateKey = process.env.TEST_PKEY as `0x${string}`; // private key of the account;
+    if (!privateKey) {
+        throw new Error('TEST_PKEY is not defined');
+    }
 
-    // FETCHING EXAMPLE USING BATCH CALL
+    const testAccount = privateKeyToAccount(privateKey)   
+    console.log("testAccount: ", testAccount.address);
+
+    const walletClient = createWalletClient({
+        chain: optimism,
+        transport: http(process.env.NEXT_PUBLIC_OPTIMISM_RPC_URL),
+        account: testAccount,
+    });
+
+
+    // FETCHING Account BALANCE
+    const balanceOfTestAccount = await publicClient.getBalance({
+        address: testAccount.address,
+    })
+
+    console.log("Balance of Test Account: ", balanceOfTestAccount);
 
     //  Create contract instance
     const foldSpaceContract = {
@@ -35,64 +61,33 @@ async function main() {
         abi: FoldSpaceAbi
     } as const
 
-    // example wallet
-    const vitalikAddress = getAddress(`0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045`);
+    // get price from contract
+    const price = await publicClient.readContract({
+        ...foldSpaceContract,
+        functionName: 'price',
+        args: [],
+    })
 
-    const results = await publicClient.multicall({
-        contracts: [
-         {
-                ...foldSpaceContract,
-                functionName: 'name',
-          },
-          {
-            ...foldSpaceContract,
-            functionName: 'totalSupply',
-          },
-          {
-            ...foldSpaceContract,
-            functionName: 'symbol'
-          },
+    console.log(`Cost to rent storage: ${price}`);
 
-            {
-                ...foldSpaceContract,
-                functionName: 'balanceOf',
-                args: [vitalikAddress]
-            },
-            {
-                ...foldSpaceContract,
-                functionName: 'ownerOf',
-                args: [1n]
-            },
-            {
-                ...foldSpaceContract,
-                functionName: 'PROXY_TEMPLATE'
-            },
-            {
-                ...foldSpaceContract,
-                functionName: 'tokenOfOwnerByIndex',
-                args: [vitalikAddress, 0] // ask for the first tokenId owned by example address
-            }
-          
-        ]
-      })
+    const valueToSend = 100000000000000000n;
 
-    const [
-        name, 
-        totalSupply, 
-        symbol, 
-        balance, 
-        ownerOf, 
-        proxyTemplateAddress,
-        tokenId
-    ] = results.map((v) => v.result)  
+    // calling mint from contract with wallet account
+    const hash = await walletClient.writeContract({
+        ...foldSpaceContract,
+        functionName: 'mint',
+        args: [],
+        value: valueToSend// price as bigint,
+    })
 
-    console.log("FoldSpace Contract Name: ", name)
-    console.log("FoldSpace Contract Total Supply: ", totalSupply)
-    console.log("FoldSpace Contract Symbol: ", symbol)
-    console.log("Wallet's Balance: ", balance)
-    console.log("Owner of tokenId 1: ", ownerOf) // here ownerOf returns undefinded since it failed
-    console.log(`First Token Id owned by Wallet ${vitalikAddress} : `, tokenId)
-    console.log("Proxy Template Address: ", proxyTemplateAddress)    
+    console.log("Transaction Hash: ", hash);
+
+    const receipt = await publicClient.waitForTransactionReceipt({ hash })
+
+    console.log("Transaction Receipt: ", receipt);
+
+    console.log("MINTED SUCCESSFULLY!")
+    console.log("Minted token id: ", receipt.logs[0].topics[3]);
 
 }
 
