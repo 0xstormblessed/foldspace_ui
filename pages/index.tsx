@@ -69,8 +69,8 @@ const Home: NextPage = () => {
     const [balanceOfResult, priceResult, fidOfAddress] = data || [];
 
     let price: bigint | undefined = undefined;
-    let balanceOf: bigint | undefined = undefined;
-    let fid: bigint | undefined = undefined;
+    let balanceOf: bigint | undefined = 0n;
+    let fid: bigint | undefined = 0n;
 
     if (priceResult && priceResult.result) {
         price = priceResult.result as bigint;
@@ -160,7 +160,7 @@ const Home: NextPage = () => {
                     padding: 12,
                 }}
             >
-                <ConnectButton />
+                <ConnectButton showBalance={true} />
             </div>
             <Container maxWidth="sm">
                 {isConnected && address && (
@@ -184,7 +184,7 @@ const Home: NextPage = () => {
                             </div>
                         ) : (
                             <>
-                                {balanceOf && (
+                                {
                                     <div>
                                         {fid && fid > 0n
                                             ? `Connected Wallet Registered FID: ${fid}`
@@ -194,62 +194,69 @@ const Home: NextPage = () => {
                                             {balanceOf.toString()}
                                         </div>
                                     </div>
+                                }{' '}
+                                {isLoading ? (
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            justifyContent: 'center',
+                                            padding: '20px',
+                                        }}
+                                    >
+                                        <CircularProgress />
+                                    </div>
+                                ) : (
+                                    <>
+                                        {price && (
+                                            <div>
+                                                Price to Mint in ETH:{' '}
+                                                {formatEther(price)}
+                                            </div>
+                                        )}
+                                        <form onSubmit={submit}>
+                                            <button
+                                                disabled={isPending}
+                                                type="submit"
+                                            >
+                                                {isPending
+                                                    ? 'Confirming...'
+                                                    : 'Mint'}
+                                            </button>
+                                            {hash && (
+                                                <div>
+                                                    Transaction:
+                                                    https://optimistic.etherscan.io/tx/
+                                                    {hash}
+                                                </div>
+                                            )}
+                                        </form>
+                                    </>
                                 )}
-
+                                {isConfirming && (
+                                    <div
+                                        style={{
+                                            display: 'flex',
+                                            justifyContent: 'center',
+                                            padding: '20px',
+                                        }}
+                                    >
+                                        <CircularProgress />
+                                    </div>
+                                )}
+                                {isConfirmed && (
+                                    <div>Transaction confirmed.</div>
+                                )}
+                                {error && (
+                                    <div>
+                                        Error:{' '}
+                                        {(error as BaseError).stack ||
+                                            error.message}
+                                    </div>
+                                )}
                                 {tokensInfo && (
                                     <ListCards tokensInfo={tokensInfo} />
                                 )}
                             </>
-                        )}
-                        {isLoading ? (
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    padding: '20px',
-                                }}
-                            >
-                                <CircularProgress />
-                            </div>
-                        ) : (
-                            <>
-                                {price && (
-                                    <div>
-                                        Price to Mint in ETH:{' '}
-                                        {formatEther(price)}
-                                    </div>
-                                )}
-                                <form onSubmit={submit}>
-                                    <button disabled={isPending} type="submit">
-                                        {isPending ? 'Confirming...' : 'Mint'}
-                                    </button>
-                                    {hash && (
-                                        <div>
-                                            Transaction:
-                                            https://optimistic.etherscan.io/tx/
-                                            {hash}
-                                        </div>
-                                    )}
-                                </form>
-                            </>
-                        )}
-                        {isConfirming && (
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    padding: '20px',
-                                }}
-                            >
-                                <CircularProgress />
-                            </div>
-                        )}
-                        {isConfirmed && <div>Transaction confirmed.</div>}
-                        {error && (
-                            <div>
-                                Error:{' '}
-                                {(error as BaseError).stack || error.message}
-                            </div>
                         )}
                     </>
                 )}
