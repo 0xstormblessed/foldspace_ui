@@ -14,7 +14,7 @@ import {
   trustWallet,
   ledgerWallet,
 } from '@rainbow-me/rainbowkit/wallets';
-import { WagmiProvider, http } from 'wagmi';
+import { WagmiProvider } from 'wagmi';
 import {
   optimism,
 } from 'wagmi/chains';
@@ -28,8 +28,7 @@ if (process.env.NEXT_PUBLIC_OPTIMISM_RPC_URL) {
 
 const config = getDefaultConfig({
   appName: 'FoldSpace NFT',
-  // TODO: replace with env project ID
-  projectId: 'YOUR_PROJECT_ID',
+  projectId: process.env.NEXT_PUBLIC_WALLECT_CONNECT_PROJECT_ID || 'YOUR_PROJECT_ID',
   wallets: [
     ...wallets,
     {

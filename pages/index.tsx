@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React, { useEffect, useState } from 'react';
 import * as dotenv from 'dotenv';
 dotenv.config();
 import { ConnectButton } from '@rainbow-me/rainbowkit';
@@ -8,12 +8,15 @@ import {
     type BaseError,
     useAccount, 
     useBalance, 
+    useReadContracts,
     useReadContract,
     useWriteContract, 
     useWaitForTransactionReceipt 
 } from 'wagmi';
-import { formatEther, parseEther } from 'viem'
-import FoldSpace from "../abi/FoldSpace.json";
+import { formatEther } from 'viem'
+import ListCards from '../components/ListCards';
+import { foldspaceContractConfig, getTokenIdsFromOwner } from '../utils/foldspace';
+
 
 
 const FOLDSPACE_CONTRACT = process.env.NEXT_PUBLIC_FOLDSPACE_ADDRESS;
@@ -28,19 +31,60 @@ const Home: NextPage = () => {
         address: address
     });
 
-    const wagmiContractConfig = {
-        address: FOLDSPACE_CONTRACT as `0x${string}`,
-        abi: FoldSpace.abi,
-    };
-
-    const { data, isLoading: isLoadingPrice } = useReadContract({
-        ...wagmiContractConfig,
-        functionName: 'price',
-        args: [],
-    })
+    const [tokenIds, setTokenIds] = useState<bigint[]>();
     
-    const price: bigint = data as bigint;
+    const { 
+        data,
+        error: readError,
+        isPending: isPendingRead
+      } = useReadContracts({ 
+        contracts: [{ 
+          ...foldspaceContractConfig,
+          functionName: 'balanceOf',
+          args: [address],
+        }, { 
+          ...foldspaceContractConfig, 
+          functionName: 'price', 
+          args: [], 
+        }] 
+      }) 
+    const  [balanceOfResult, priceResult] = data || [] 
 
+    let price: bigint | undefined = undefined;
+    let balanceOf: bigint | undefined = undefined;
+    
+    if (priceResult && priceResult.result) {
+        price = priceResult.result as bigint;
+    }
+    if (balanceOfResult && balanceOfResult.result) {
+        balanceOf = balanceOfResult.result as bigint;
+    }
+        
+
+
+    useEffect(() => {
+        async function fetchTokenIds() {
+            if (address && balanceOf) {
+                try {
+                    const ids = await getTokenIdsFromOwner(address, balanceOf);
+                    setTokenIds(ids);
+                } catch (error) {
+                    console.error('Failed to fetch token IDs', error);
+                    // handle the error state here
+                }
+            } else {
+                // reset token IDs or handle the disconnected state
+                setTokenIds([]);
+            }
+        }
+    
+        fetchTokenIds();
+    }, [address, balanceOf]); // Re-run this effect if the 'address' changes
+    
+
+    
+ 
+    
     const { data: hash, isPending, error, writeContract } = useWriteContract();
 
     async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -49,15 +93,19 @@ const Home: NextPage = () => {
         if (FOLDSPACE_CONTRACT === undefined) {
             throw new Error('FOLDSPACE_CONTRACT is not defined');
         }
-        console.log(`sending transaction with price: ${price}...`);
-        console.log('wagmiContractConfig:', wagmiContractConfig);
-        
-        writeContract({
-            ...wagmiContractConfig,
-            functionName: 'mint',
-            args: [],
-            value: BigInt(price),
-        });
+        if (price === undefined) {
+            throw new Error('unable to fetch price');
+        }
+
+        if (price) {
+            writeContract({
+                ...foldspaceContractConfig,
+                functionName: 'mint',
+                args: [],
+                value: price,
+            });
+        }
+       
     }
 
     const { isLoading: isConfirming, isSuccess: isConfirmed } = 
@@ -79,15 +127,12 @@ const Home: NextPage = () => {
             <Container maxWidth="sm">
                 {isConnected && address && (
                     <>
-                        <div>Account: {address}</div>
-                        {isLoading ? (
-                            <div>Loading balance...</div>
-                        ) : isError ? (
-                            <div>Error fetching balance.</div>
-                        ) : (
-                            <div>Balance: {balance?.formatted} ETH</div>
-                        )}
-                        {price && <div>Minting Price ETH: {formatEther(price)}</div>} 
+                        <h1>My FoldSpace NFTs</h1>
+                        {isPendingRead && <div>Loading Account info...</div>}
+                        {readError && <div>Error fetching account info. Please reload</div>}
+                        {balanceOf && <div>Number of FoldSpace NFTs Owned: {balanceOf.toString()}</div>}
+                        {tokenIds && <ListCards tokenIds={tokenIds} />    }
+                        {price && <div>Price to Mint in ETH: {formatEther(price)}</div>} 
                         <form onSubmit={submit}>
                             <button disabled={isPending} type="submit">
                                 { isPending ? 'Confirming...' : 'Mint'} 
