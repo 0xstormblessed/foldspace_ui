@@ -1,5 +1,6 @@
 import { createPublicClient, http } from 'viem'
 import { optimism } from 'viem/chains'
+import { TokenInfo } from './types';
 import FoldSpace from "../abi/FoldSpace.json";
 
 let FOLDSPACE_CONTRACT = process.env.NEXT_PUBLIC_FOLDSPACE_ADDRESS;
@@ -46,10 +47,50 @@ async function getTokenIdsFromOwner(owner: string, balanceOf: bigint) : Promise<
     return tokenIds;
 }
 
+async function getTokensInfo(tokenIds: bigint[]): Promise<TokenInfo[]> {
+    const tokenInfoCall: { address: `0x${string}`; abi: AbiFunction; functionName: string; args: (string | number)[] }[] = [];
+    const info: TokenInfo[] = []; // Use the TokenInfo type for the info array
+    const len = tokenIds.length;
+
+    if (len === 0) {
+        return info;
+    }
+
+    tokenIds.forEach(tokenId => {
+        tokenInfoCall.push({
+            ...foldspaceContractConfig,
+            functionName: 'tokenURI',
+            args: [tokenId.toString()], 
+        });
+    });
+
+    tokenIds.forEach(tokenId => {
+        tokenInfoCall.push({
+            ...foldspaceContractConfig,
+            functionName: 'getFidFor',
+            args: [tokenId.toString()], 
+        });
+    });
+
+    const results = await publicClient.multicall({
+        contracts: tokenInfoCall,
+    });
+
+    // Construct the info array using the TokenInfo structure
+    for (let i = 0; i < len; i++) {
+        const tokenId = tokenIds[i];
+        const uri = results[i].result as string;
+        const fid = results[i + len].result as bigint;
+        info.push({ tokenId, FID: fid, URI: uri }); // Create an object for each TokenInfo
+    }
+
+    return info;
+}
 
 
 export { 
     publicClient, 
     foldspaceContractConfig,
-    getTokenIdsFromOwner
+    getTokenIdsFromOwner,
+    getTokensInfo
 }

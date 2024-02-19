@@ -1,22 +1,23 @@
-// ListCards.tsx
 import React from 'react';
 import Grid from '@mui/material/Grid';
-import FoldSpaceCard from './FoldSpaceCard'; // Adjust the import path as necessary
+import FoldSpaceCard from './FoldSpaceCard';
+import { TokenInfo } from '../utils/types';
 
 interface ListCardsProps {
-    tokenIds: bigint[]; // Accepting an array of bigint for tokenIds
+    tokensInfo: TokenInfo[];
 }
 
-const FoldSpaceCards: React.FC<ListCardsProps> = ({ tokenIds }) => {
+const ListCards: React.FC<ListCardsProps> = ({ tokensInfo }) => {
     return (
         <Grid container spacing={2}>
-            {tokenIds.map((tokenId, index) => (
-                <Grid item key={index}>
-                    <FoldSpaceCard tokenId={tokenId} />
+            {tokensInfo.map((tokenInfo, index) => (
+                <Grid item key={index} xs={12} sm={6} md={4} lg={3}> {/* Adjust grid sizing as needed */}
+                    <FoldSpaceCard tokenInfo={tokenInfo} />
                 </Grid>
             ))}
         </Grid>
     );
 };
 
-export default FoldSpaceCards;
+export default ListCards;
+
