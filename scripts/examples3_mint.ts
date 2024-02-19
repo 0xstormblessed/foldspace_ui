@@ -70,14 +70,12 @@ async function main() {
 
     console.log(`Cost to rent storage: ${price}`);
 
-    const valueToSend = 100000000000000000n;
-
     // calling mint from contract with wallet account
     const hash = await walletClient.writeContract({
         ...foldSpaceContract,
         functionName: 'mint',
         args: [],
-        value: valueToSend// price as bigint,
+        value: price as bigint,
     })
 
     console.log("Transaction Hash: ", hash);
