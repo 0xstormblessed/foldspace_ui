@@ -4,6 +4,7 @@ dotenv.config();
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import type { NextPage } from 'next';
 import Container from '@mui/material/Container';
+import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import {
     type BaseError,
@@ -13,7 +14,7 @@ import {
     useWriteContract,
     useWaitForTransactionReceipt,
 } from 'wagmi';
-import { formatEther } from 'viem';
+import { formatEther, Address } from 'viem';
 import ListCards from '../components/ListCards';
 import {
     foldspaceContractConfig,
@@ -83,44 +84,44 @@ const Home: NextPage = () => {
         fid = fidOfAddress.result as bigint;
     }
 
-    useEffect(() => {
-        async function fetchTokenIds() {
-            if (address && balanceOf) {
-                try {
-                    setIsTokenIdsLoading(true);
-                    const ids = await getTokenIdsFromOwner(address, balanceOf);
-                    setTokenIds(ids);
-                    setIsTokenIdsLoading(false);
-                } catch (error) {
-                    setIsTokenIdsLoading(false);
-                    console.error('Failed to fetch token IDs', error);
-                }
-            } else {
-                // reset token IDs or handle the disconnected state
-                setTokenIds([]);
+    const fetchTokenIds = async () => {
+        if (address && balanceOf) {
+            try {
+                setIsTokenIdsLoading(true);
+                const ids = await getTokenIdsFromOwner(address, balanceOf);
+                setTokenIds(ids);
+                setIsTokenIdsLoading(false);
+            } catch (error) {
+                setIsTokenIdsLoading(false);
+                console.error('Failed to fetch token IDs', error);
             }
+        } else {
+            // reset token IDs or handle the disconnected state
+            setTokenIds([]);
         }
+    };
 
+    const fetchTokensInfo = async () => {
+        if (tokenIds && tokenIds.length > 0) {
+            try {
+                setIsTokensInfoLoading(true);
+                const info = await getTokensInfo(tokenIds);
+                setTokensInfo(info);
+                setIsTokensInfoLoading(false);
+            } catch (error) {
+                setIsTokensInfoLoading(false);
+            }
+        } else {
+            setTokensInfo([]);
+        }
+    };
+
+    useEffect(() => {
         fetchTokenIds();
     }, [address, balanceOf]); // Re-run this effect if the 'address' changes
 
     // Effect to fetch token info whenever tokenIds are updated
     useEffect(() => {
-        async function fetchTokensInfo() {
-            if (tokenIds && tokenIds.length > 0) {
-                try {
-                    setIsTokensInfoLoading(true);
-                    const info = await getTokensInfo(tokenIds);
-                    setTokensInfo(info);
-                    setIsTokensInfoLoading(false);
-                } catch (error) {
-                    setIsTokensInfoLoading(false);
-                }
-            } else {
-                setTokensInfo([]);
-            }
-        }
-
         fetchTokensInfo();
     }, [tokenIds]); // Depends on tokenIds
 
@@ -144,7 +145,12 @@ const Home: NextPage = () => {
                 value: price,
             });
         }
+        fetchTokenIds();
     }
+
+    const updateTokenCallback = () => {
+        fetchTokenIds();
+    };
 
     const { isLoading: isConfirming, isSuccess: isConfirmed } =
         useWaitForTransactionReceipt({
@@ -166,8 +172,8 @@ const Home: NextPage = () => {
                 {isConnected && address && (
                     <>
                         <h1>My FoldSpace NFTs</h1>
-                        {isPendingRead &&
-                        isTokenIdsLoading &&
+                        {isPendingRead ||
+                        isTokenIdsLoading ||
                         isTokensInfoLoading ? (
                             <div
                                 style={{
@@ -254,7 +260,12 @@ const Home: NextPage = () => {
                                     </div>
                                 )}
                                 {tokensInfo && (
-                                    <ListCards tokensInfo={tokensInfo} />
+                                    <ListCards
+                                        tokensInfo={tokensInfo}
+                                        tokenUpdateCallback={
+                                            updateTokenCallback
+                                        }
+                                    />
                                 )}
                             </>
                         )}
