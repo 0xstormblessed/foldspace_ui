@@ -4,6 +4,7 @@ dotenv.config();
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import type { NextPage } from 'next';
 import Container from '@mui/material/Container';
+import CircularProgress from '@mui/material/CircularProgress';
 import { 
     type BaseError,
     useAccount, 
@@ -113,7 +114,7 @@ const Home: NextPage = () => {
         hash, 
      }) 
 
-    return (
+     return (
         <div>
             <div
                 style={{
@@ -128,28 +129,48 @@ const Home: NextPage = () => {
                 {isConnected && address && (
                     <>
                         <h1>My FoldSpace NFTs</h1>
-                        {isPendingRead && <div>Loading Account info...</div>}
-                        {readError && <div>Error fetching account info. Please reload</div>}
-                        {balanceOf && <div>Number of FoldSpace NFTs Owned: {balanceOf.toString()}</div>}
-                        {tokenIds && <ListCards tokenIds={tokenIds} />    }
-                        {price && <div>Price to Mint in ETH: {formatEther(price)}</div>} 
-                        <form onSubmit={submit}>
-                            <button disabled={isPending} type="submit">
-                                { isPending ? 'Confirming...' : 'Mint'} 
-                            </button>
-                            { hash && <div>Transaction: https://optimistic.etherscan.io/tx/{hash}</div>}
-                            {isConfirming && <div>Waiting for confirmation...</div>} 
-                            {isConfirmed && <div>Transaction confirmed.</div>} 
-                            {error && ( 
-                                <div>Error: {(error as BaseError).stack || error.message}</div> 
-                            )}
-                        </form>
-                        
+                        {isPendingRead ? (
+                            <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
+                                <CircularProgress />
+                            </div>
+                        ) : readError ? (
+                            <div>Error fetching account info. Please reload</div>
+                        ) : (
+                            <>
+                                {balanceOf && <div>Number of FoldSpace NFTs Owned: {balanceOf.toString()}</div>}
+                                {tokenIds && <ListCards tokenIds={tokenIds} />}
+                            </>
+                        )}
+                        {isLoading ? (
+                            <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
+                                <CircularProgress />
+                            </div>
+                        ) : (
+                            <>
+                                {price && <div>Price to Mint in ETH: {formatEther(price)}</div>} 
+                                <form onSubmit={submit}>
+                                    <button disabled={isPending} type="submit">
+                                        {isPending ? 'Confirming...' : 'Mint'}
+                                    </button>
+                                    {hash && <div>Transaction: https://optimistic.etherscan.io/tx/{hash}</div>}
+                                </form>
+                            </>
+                        )}
+                        {isConfirming && (
+                            <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
+                                <CircularProgress />
+                            </div>
+                        )}
+                        {isConfirmed && <div>Transaction confirmed.</div>}
+                        {error && (
+                            <div>Error: {(error as BaseError).stack || error.message}</div>
+                        )}
                     </>
                 )}
             </Container>
         </div>
     );
+    
 };
 
 export default Home;
