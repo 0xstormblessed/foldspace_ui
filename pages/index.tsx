@@ -5,71 +5,83 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import type { NextPage } from 'next';
 import Container from '@mui/material/Container';
 import CircularProgress from '@mui/material/CircularProgress';
-import { 
+import {
     type BaseError,
-    useAccount, 
-    useBalance, 
+    useAccount,
+    useBalance,
     useReadContracts,
-    useReadContract,
-    useWriteContract, 
-    useWaitForTransactionReceipt 
+    useWriteContract,
+    useWaitForTransactionReceipt,
 } from 'wagmi';
-import { formatEther } from 'viem'
+import { formatEther } from 'viem';
 import ListCards from '../components/ListCards';
-import { 
-    foldspaceContractConfig, 
-    getTokenIdsFromOwner, 
-    getTokensInfo
+import {
+    foldspaceContractConfig,
+    farcasterIdRegistryConfig,
+    getTokenIdsFromOwner,
+    getTokensInfo,
 } from '../utils/foldspace';
 import { TokenInfo } from '../utils/types';
-
-
 
 const FOLDSPACE_CONTRACT = process.env.NEXT_PUBLIC_FOLDSPACE_ADDRESS;
 
 console.log('FOLDSPACE_CONTRACT:', FOLDSPACE_CONTRACT);
 
-
 const Home: NextPage = () => {
     const { address, isConnected } = useAccount();
     // Adjust useBalance to conditionally fetch based on address availability
-    const { data: balance, isError, isLoading } = useBalance({
-        address: address
+    const {
+        data: balance,
+        isError,
+        isLoading,
+    } = useBalance({
+        address: address,
     });
 
     const [tokenIds, setTokenIds] = useState<bigint[]>();
     const [tokensInfo, setTokensInfo] = useState<TokenInfo[]>();
     const [isTokenIdsLoading, setIsTokenIdsLoading] = useState(false);
-    const [isTokensInfoLoading, setIsTokensInfoLoading  ] = useState(false);
-    
-    const { 
+    const [isTokensInfoLoading, setIsTokensInfoLoading] = useState(false);
+
+    const {
         data,
         error: readError,
-        isPending: isPendingRead
-      } = useReadContracts({ 
-        contracts: [{ 
-          ...foldspaceContractConfig,
-          functionName: 'balanceOf',
-          args: [address],
-        }, { 
-          ...foldspaceContractConfig, 
-          functionName: 'price', 
-          args: [], 
-        }] 
-      }) 
-    const  [balanceOfResult, priceResult] = data || [] 
+        isPending: isPendingRead,
+    } = useReadContracts({
+        contracts: [
+            {
+                ...foldspaceContractConfig,
+                functionName: 'balanceOf',
+                args: [address],
+            },
+            {
+                ...foldspaceContractConfig,
+                functionName: 'price',
+                args: [],
+            },
+            {
+                ...farcasterIdRegistryConfig,
+                functionName: 'idOf',
+                args: [address],
+            },
+        ],
+    });
+    const [balanceOfResult, priceResult, fidOfAddress] = data || [];
 
     let price: bigint | undefined = undefined;
     let balanceOf: bigint | undefined = undefined;
-    
+    let fid: bigint | undefined = undefined;
+
     if (priceResult && priceResult.result) {
         price = priceResult.result as bigint;
     }
     if (balanceOfResult && balanceOfResult.result) {
         balanceOf = balanceOfResult.result as bigint;
     }
-        
 
+    if (fidOfAddress && fidOfAddress.result) {
+        fid = fidOfAddress.result as bigint;
+    }
 
     useEffect(() => {
         async function fetchTokenIds() {
@@ -88,10 +100,10 @@ const Home: NextPage = () => {
                 setTokenIds([]);
             }
         }
-    
+
         fetchTokenIds();
     }, [address, balanceOf]); // Re-run this effect if the 'address' changes
-    
+
     // Effect to fetch token info whenever tokenIds are updated
     useEffect(() => {
         async function fetchTokensInfo() {
@@ -111,9 +123,7 @@ const Home: NextPage = () => {
 
         fetchTokensInfo();
     }, [tokenIds]); // Depends on tokenIds
-    
- 
-    
+
     const { data: hash, isPending, error, writeContract } = useWriteContract();
 
     async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -134,15 +144,14 @@ const Home: NextPage = () => {
                 value: price,
             });
         }
-       
     }
 
-    const { isLoading: isConfirming, isSuccess: isConfirmed } = 
-        useWaitForTransactionReceipt({ 
-        hash, 
-     }) 
+    const { isLoading: isConfirming, isSuccess: isConfirmed } =
+        useWaitForTransactionReceipt({
+            hash,
+        });
 
-     return (
+    return (
         <div>
             <div
                 style={{
@@ -157,48 +166,96 @@ const Home: NextPage = () => {
                 {isConnected && address && (
                     <>
                         <h1>My FoldSpace NFTs</h1>
-                        {isPendingRead && isTokenIdsLoading && isTokensInfoLoading ? (
-                            <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
+                        {isPendingRead &&
+                        isTokenIdsLoading &&
+                        isTokensInfoLoading ? (
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    padding: '20px',
+                                }}
+                            >
                                 <CircularProgress />
                             </div>
                         ) : readError ? (
-                            <div>Error fetching account info. Please reload</div>
+                            <div>
+                                Error fetching account info. Please reload
+                            </div>
                         ) : (
                             <>
-                                {balanceOf && <div>Number of FoldSpace NFTs Owned: {balanceOf.toString()}</div>}
-                                {tokensInfo && <ListCards tokensInfo={tokensInfo} />}
+                                {balanceOf && (
+                                    <div>
+                                        {fid && fid > 0n
+                                            ? `Connected Wallet Registered FID: ${fid}`
+                                            : `Wallet has no registered FID`}
+                                        <div>
+                                            Number of FoldSpace NFTs Owned:{' '}
+                                            {balanceOf.toString()}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {tokensInfo && (
+                                    <ListCards tokensInfo={tokensInfo} />
+                                )}
                             </>
                         )}
                         {isLoading ? (
-                            <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    padding: '20px',
+                                }}
+                            >
                                 <CircularProgress />
                             </div>
                         ) : (
                             <>
-                                {price && <div>Price to Mint in ETH: {formatEther(price)}</div>} 
+                                {price && (
+                                    <div>
+                                        Price to Mint in ETH:{' '}
+                                        {formatEther(price)}
+                                    </div>
+                                )}
                                 <form onSubmit={submit}>
                                     <button disabled={isPending} type="submit">
                                         {isPending ? 'Confirming...' : 'Mint'}
                                     </button>
-                                    {hash && <div>Transaction: https://optimistic.etherscan.io/tx/{hash}</div>}
+                                    {hash && (
+                                        <div>
+                                            Transaction:
+                                            https://optimistic.etherscan.io/tx/
+                                            {hash}
+                                        </div>
+                                    )}
                                 </form>
                             </>
                         )}
                         {isConfirming && (
-                            <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
+                            <div
+                                style={{
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    padding: '20px',
+                                }}
+                            >
                                 <CircularProgress />
                             </div>
                         )}
                         {isConfirmed && <div>Transaction confirmed.</div>}
                         {error && (
-                            <div>Error: {(error as BaseError).stack || error.message}</div>
+                            <div>
+                                Error:{' '}
+                                {(error as BaseError).stack || error.message}
+                            </div>
                         )}
                     </>
                 )}
             </Container>
         </div>
     );
-    
 };
 
 export default Home;

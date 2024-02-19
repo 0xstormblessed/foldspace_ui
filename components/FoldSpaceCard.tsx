@@ -9,7 +9,7 @@ interface FoldSpaceCardProps {
 }
 
 const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({ tokenInfo }) => {
-    const { tokenId, FID, URI } = tokenInfo; 
+    const { tokenId, FID, URI } = tokenInfo;
 
     return (
         <Card sx={{ minWidth: 275, margin: 2 }}>
@@ -17,9 +17,7 @@ const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({ tokenInfo }) => {
                 <Typography variant="h5" component="div">
                     Token ID: {tokenId.toString()}
                 </Typography>
-                <Typography variant="body1">
-                    FID: {FID.toString()} 
-                </Typography>
+                <Typography variant="body1">FID: {FID.toString()}</Typography>
             </CardContent>
         </Card>
     );

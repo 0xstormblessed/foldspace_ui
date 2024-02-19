@@ -1,31 +1,47 @@
-import { createPublicClient, http } from 'viem'
-import { optimism } from 'viem/chains'
+import { createPublicClient, http } from 'viem';
+import { optimism } from 'viem/chains';
 import { TokenInfo } from './types';
-import FoldSpace from "../abi/FoldSpace.json";
+import FoldSpace from '../abi/FoldSpace.json';
+import FarcasterIdRegistry from '../abi/FarcasterIdRegistry.json';
 
 let FOLDSPACE_CONTRACT = process.env.NEXT_PUBLIC_FOLDSPACE_ADDRESS;
-let rpcURL = process.env.NEXT_PUBLIC_OPTIMISM_RPC_URL ? process.env.NEXT_PUBLIC_OPTIMISM_RPC_URL : 'https://mainnet.optimism.io';
- 
-const publicClient = createPublicClient({ 
+let rpcURL = process.env.NEXT_PUBLIC_OPTIMISM_RPC_URL
+    ? process.env.NEXT_PUBLIC_OPTIMISM_RPC_URL
+    : 'https://mainnet.optimism.io';
+
+const publicClient = createPublicClient({
     batch: {
-        multicall: true, 
+        multicall: true,
     },
-  chain: optimism,
-  transport: http(rpcURL)
-})
+    chain: optimism,
+    transport: http(rpcURL),
+});
 
 const foldspaceContractConfig = {
     address: FOLDSPACE_CONTRACT as `0x${string}`,
     abi: FoldSpace.abi,
 };
 
-async function getTokenIdsFromOwner(owner: string, balanceOf: bigint) : Promise<bigint[]> {
+const farcasterIdRegistryConfig = {
+    address: '0x00000000Fc6c5F01Fc30151999387Bb99A9f489b' as `0x${string}`,
+    abi: FarcasterIdRegistry.abi,
+};
+
+async function getTokenIdsFromOwner(
+    owner: string,
+    balanceOf: bigint,
+): Promise<bigint[]> {
     let tokenIds: bigint[] = [];
     if (balanceOf === 0n) {
         return tokenIds;
     }
-    
-    const tokenIdsCall: { address: `0x${string}`; abi: AbiFunction; functionName: string; args: (string | number)[] }[] = [];
+
+    const tokenIdsCall: {
+        address: `0x${string}`;
+        abi: AbiFunction;
+        functionName: string;
+        args: (string | number)[];
+    }[] = [];
 
     for (let i = 0; i < balanceOf; i++) {
         tokenIdsCall.push({
@@ -36,19 +52,26 @@ async function getTokenIdsFromOwner(owner: string, balanceOf: bigint) : Promise<
     }
     const results = await publicClient.multicall({
         contracts: tokenIdsCall,
-    })
-
-    results.filter(result => result.status === 'success').forEach(result => {
-        if (result.result) {
-            tokenIds.push(result.result as bigint);
-        }
     });
+
+    results
+        .filter((result) => result.status === 'success')
+        .forEach((result) => {
+            if (result.result) {
+                tokenIds.push(result.result as bigint);
+            }
+        });
 
     return tokenIds;
 }
 
 async function getTokensInfo(tokenIds: bigint[]): Promise<TokenInfo[]> {
-    const tokenInfoCall: { address: `0x${string}`; abi: AbiFunction; functionName: string; args: (string | number)[] }[] = [];
+    const tokenInfoCall: {
+        address: `0x${string}`;
+        abi: AbiFunction;
+        functionName: string;
+        args: (string | number)[];
+    }[] = [];
     const info: TokenInfo[] = []; // Use the TokenInfo type for the info array
     const len = tokenIds.length;
 
@@ -56,19 +79,19 @@ async function getTokensInfo(tokenIds: bigint[]): Promise<TokenInfo[]> {
         return info;
     }
 
-    tokenIds.forEach(tokenId => {
+    tokenIds.forEach((tokenId) => {
         tokenInfoCall.push({
             ...foldspaceContractConfig,
             functionName: 'tokenURI',
-            args: [tokenId.toString()], 
+            args: [tokenId.toString()],
         });
     });
 
-    tokenIds.forEach(tokenId => {
+    tokenIds.forEach((tokenId) => {
         tokenInfoCall.push({
             ...foldspaceContractConfig,
             functionName: 'getFidFor',
-            args: [tokenId.toString()], 
+            args: [tokenId.toString()],
         });
     });
 
@@ -87,10 +110,10 @@ async function getTokensInfo(tokenIds: bigint[]): Promise<TokenInfo[]> {
     return info;
 }
 
-
-export { 
-    publicClient, 
+export {
+    publicClient,
     foldspaceContractConfig,
     getTokenIdsFromOwner,
-    getTokensInfo
-}
+    getTokensInfo,
+    farcasterIdRegistryConfig,
+};
