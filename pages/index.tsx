@@ -251,7 +251,7 @@ const Home: NextPage = () => {
                             Connect your wallet to foldspace into Farcaster
                         </Box>
                         <img
-                            src="/images/landing.webp"
+                            src="/images/gate.webp"
                             alt="FoldSpace Landing Image"
                             style={{ maxWidth: '30%', marginTop: '20px' }}
                         />
