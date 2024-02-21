@@ -3,12 +3,14 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import type { NextPage } from 'next';
-import Container from '@mui/material/Container';
-import Button from '@mui/material/Button';
-import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
-import CircularProgress from '@mui/material/CircularProgress';
-import Box from '@mui/material/Box';
+import {
+    Box,
+    Tab,
+    Tabs,
+    Typography,
+    Container,
+    CircularProgress,
+} from '@mui/material';
 import {
     type BaseError,
     useAccount,
@@ -18,7 +20,6 @@ import {
     useWaitForTransactionReceipt,
 } from 'wagmi';
 import { formatEther, Address, isAddress, getAddress } from 'viem';
-import ListCards from '../components/ListCards';
 import {
     foldspaceContractConfig,
     farcasterIdRegistryConfig,
@@ -26,6 +27,8 @@ import {
     getTokensInfo,
 } from '../utils/foldspace';
 import { TokenInfo } from '../utils/types';
+import MintForm from '../components/MintForm';
+import MyNFTs from '../components/MyNFTs';
 
 const FOLDSPACE_CONTRACT = process.env.NEXT_PUBLIC_FOLDSPACE_ADDRESS;
 
@@ -42,6 +45,8 @@ const Home: NextPage = () => {
         address: address,
     });
 
+    const [tabValue, setTabValue] = useState(0);
+
     const [tokenIds, setTokenIds] = useState<bigint[]>();
     const [tokensInfo, setTokensInfo] = useState<TokenInfo[]>();
     const [isTokenIdsLoading, setIsTokenIdsLoading] = useState(false);
@@ -50,6 +55,10 @@ const Home: NextPage = () => {
     const [isRecipentAddressValid, setIsRecipientAddressValid] =
         useState<boolean>(true);
     const [isPendingValidAddress, setIsPendingValidAddress] = useState(false);
+
+    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+        setTabValue(newValue);
+    };
 
     const handleAddressChange = (
         event: React.ChangeEvent<HTMLInputElement>,
@@ -215,47 +224,21 @@ const Home: NextPage = () => {
                 {isConnected && address && (
                     <>
                         <Box sx={{ typography: 'h2' }}>FoldSpace NFTs</Box>
-                        {isPendingRead ||
-                        isTokenIdsLoading ||
-                        isTokensInfoLoading ? (
-                            <div
-                                style={{
-                                    display: 'flex',
-                                    justifyContent: 'center',
-                                    padding: '20px',
-                                }}
+                        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                            <Tabs
+                                value={tabValue}
+                                onChange={handleTabChange}
+                                aria-label="FoldSpace NFTs tabs"
                             >
-                                <CircularProgress />
-                            </div>
-                        ) : readError ? (
-                            <div>
-                                Error fetching account info. Please reload
-                            </div>
-                        ) : (
+                                <Tab label="Mint" />
+                                <Tab label="My NFTs" />
+                            </Tabs>
+                        </Box>
+                        {tabValue === 0 && (
                             <>
-                                {
-                                    <div>
-                                        {/* use box for typography */}
-                                        {fid && fid > 0n ? (
-                                            <Box
-                                                sx={{ typography: 'paragraph' }}
-                                            >{`Connected Wallet Registered FID: ${fid}`}</Box>
-                                        ) : (
-                                            <Box
-                                                sx={{ typography: 'paragraph' }}
-                                            >{`Wallet has no registered FID`}</Box>
-                                        )}
-                                        <div>
-                                            <Box
-                                                sx={{ typography: 'paragraph' }}
-                                            >
-                                                Number of FoldSpace NFTs Owned:{' '}
-                                                {balanceOf.toString()}{' '}
-                                            </Box>
-                                        </div>
-                                    </div>
-                                }{' '}
-                                {isLoading ? (
+                                {isPendingRead ||
+                                isTokenIdsLoading ||
+                                isTokensInfoLoading ? (
                                     <div
                                         style={{
                                             display: 'flex',
@@ -264,104 +247,122 @@ const Home: NextPage = () => {
                                         }}
                                     >
                                         <CircularProgress />
+                                    </div>
+                                ) : readError ? (
+                                    <div>
+                                        Error fetching account info. Please
+                                        reload
                                     </div>
                                 ) : (
                                     <>
-                                        {price && (
-                                            <Box
-                                                sx={{ typography: 'paragraph' }}
+                                        {
+                                            <div>
+                                                {/* use box for typography */}
+                                                {fid && fid > 0n ? (
+                                                    <Box
+                                                        sx={{
+                                                            typography:
+                                                                'paragraph',
+                                                        }}
+                                                    >{`Connected Wallet Registered FID: ${fid}`}</Box>
+                                                ) : (
+                                                    <Box
+                                                        sx={{
+                                                            typography:
+                                                                'paragraph',
+                                                        }}
+                                                    >{`Wallet has no registered FID`}</Box>
+                                                )}
+                                                <div>
+                                                    <Box
+                                                        sx={{
+                                                            typography:
+                                                                'paragraph',
+                                                        }}
+                                                    >
+                                                        Number of FoldSpace NFTs
+                                                        Owned:{' '}
+                                                        {balanceOf.toString()}{' '}
+                                                    </Box>
+                                                </div>
+                                            </div>
+                                        }{' '}
+                                        {isLoading ? (
+                                            <div
+                                                style={{
+                                                    display: 'flex',
+                                                    justifyContent: 'center',
+                                                    padding: '20px',
+                                                }}
                                             >
-                                                Price to Mint in ETH:{' '}
-                                                {formatEther(price)}
-                                            </Box>
-                                        )}
+                                                <CircularProgress />
+                                            </div>
+                                        ) : (
+                                            <>
+                                                {price && (
+                                                    <Box
+                                                        sx={{
+                                                            typography:
+                                                                'paragraph',
+                                                        }}
+                                                    >
+                                                        Price to Mint in ETH:{' '}
+                                                        {formatEther(price)}
+                                                    </Box>
+                                                )}
 
-                                        <form onSubmit={submit}>
-                                            <Stack
-                                                spacing={2}
-                                                direction="column"
-                                            >
-                                                <TextField
-                                                    label="Recipient Address (Optional)"
-                                                    placeholder="Enter recipient Ethereum address (optional)"
-                                                    variant="outlined"
-                                                    fullWidth
-                                                    value={recipientAddress}
-                                                    onChange={
+                                                <MintForm
+                                                    isPending={isPending}
+                                                    isRecipentAddressValid={
+                                                        isRecipentAddressValid
+                                                    }
+                                                    recipientAddress={
+                                                        recipientAddress
+                                                    }
+                                                    handleAddressChange={
                                                         handleAddressChange
                                                     }
-                                                    error={
-                                                        !isRecipentAddressValid
-                                                    }
-                                                    helperText={
-                                                        !isRecipentAddressValid &&
-                                                        'Invalid Ethereum address'
-                                                    }
-                                                    disabled={isPending}
+                                                    submit={submit}
                                                 />
-                                                <Button
-                                                    disabled={
-                                                        isPending ||
-                                                        !isRecipentAddressValid
-                                                    }
-                                                    type="submit"
-                                                    color="primary"
-                                                    variant="contained"
-                                                    style={{
-                                                        backgroundColor:
-                                                            isRecipentAddressValid
-                                                                ? undefined
-                                                                : 'red',
-                                                        color: isRecipentAddressValid
-                                                            ? undefined
-                                                            : 'white',
-                                                    }}
-                                                >
-                                                    {isPending
-                                                        ? 'Confirming...'
-                                                        : 'Mint'}
-                                                </Button>
-                                            </Stack>
-                                            {hash && (
-                                                <div>
-                                                    Transaction:
-                                                    https://optimistic.etherscan.io/tx/
-                                                    {hash}
-                                                </div>
-                                            )}
-                                        </form>
+                                                {hash && (
+                                                    <div>
+                                                        Transaction:
+                                                        https://optimistic.etherscan.io/tx/
+                                                        {hash}
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
+                                        {isConfirming && (
+                                            <div
+                                                style={{
+                                                    display: 'flex',
+                                                    justifyContent: 'center',
+                                                    padding: '20px',
+                                                }}
+                                            >
+                                                <CircularProgress />
+                                            </div>
+                                        )}
+                                        {isConfirmed && (
+                                            <div>Transaction confirmed.</div>
+                                        )}
+                                        {error && (
+                                            <div>
+                                                Error:{' '}
+                                                {(error as BaseError).stack ||
+                                                    error.message}
+                                            </div>
+                                        )}
                                     </>
                                 )}
-                                {isConfirming && (
-                                    <div
-                                        style={{
-                                            display: 'flex',
-                                            justifyContent: 'center',
-                                            padding: '20px',
-                                        }}
-                                    >
-                                        <CircularProgress />
-                                    </div>
-                                )}
-                                {isConfirmed && (
-                                    <div>Transaction confirmed.</div>
-                                )}
-                                {error && (
-                                    <div>
-                                        Error:{' '}
-                                        {(error as BaseError).stack ||
-                                            error.message}
-                                    </div>
-                                )}
-                                {tokensInfo && (
-                                    <ListCards
-                                        tokensInfo={tokensInfo}
-                                        tokenUpdateCallback={
-                                            updateTokenCallback
-                                        }
-                                    />
-                                )}
                             </>
+                        )}
+                        {tabValue === 1 && (
+                            <MyNFTs
+                                tokensInfo={tokensInfo}
+                                updateTokenCallback={updateTokenCallback}
+                            />
                         )}
                     </>
                 )}
