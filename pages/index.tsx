@@ -29,6 +29,7 @@ import {
 import { TokenInfo } from '../utils/types';
 import MintForm from '../components/MintForm';
 import MyNFTs from '../components/MyNFTs';
+import logo from '/images/logo.webp';
 
 const FOLDSPACE_CONTRACT = process.env.NEXT_PUBLIC_FOLDSPACE_ADDRESS;
 
@@ -211,19 +212,55 @@ const Home: NextPage = () => {
 
     return (
         <div>
-            <div
-                style={{
-                    display: 'flex',
-                    justifyContent: 'flex-end',
-                    padding: 12,
-                }}
-            >
-                <ConnectButton showBalance={true} />
+            <div>
+                <div
+                    style={{
+                        display: 'flex',
+                        justifyContent: 'flex-end',
+                        padding: 12,
+                        width: '100%',
+                    }}
+                >
+                    <ConnectButton showBalance={true} />
+                </div>
+                <Box
+                    sx={{
+                        typography: 'h2',
+                        textAlign: 'center',
+                        marginTop: '20px',
+                    }}
+                >
+                    FoldSpace NFT
+                </Box>
+                {!isConnected && (
+                    <div
+                        style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            marginTop: '20px',
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                typography: 'paragraph',
+                                textAlign: 'center',
+                                marginTop: '20px',
+                            }}
+                        >
+                            Connect your wallet to foldspace into Farcaster
+                        </Box>
+                        <img
+                            src="/images/landing.webp"
+                            alt="FoldSpace Landing Image"
+                            style={{ maxWidth: '30%', marginTop: '20px' }}
+                        />
+                    </div>
+                )}
             </div>
             <Container maxWidth="sm">
                 {isConnected && address && (
                     <>
-                        <Box sx={{ typography: 'h2' }}>FoldSpace NFT</Box>
                         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
                             <Tabs
                                 value={tabValue}
