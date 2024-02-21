@@ -1,16 +1,17 @@
 import React, { useCallback, useState } from 'react';
 import Grid from '@mui/material/Grid';
 import FoldSpaceCard from './FoldSpaceCard';
-import { Address } from 'viem';
 import { TokenInfo } from '../utils/types';
 
 interface ListCardsProps {
     tokensInfo: TokenInfo[];
+    hasFid: boolean;
     tokenUpdateCallback: () => void;
 }
 
 const ListCards: React.FC<ListCardsProps> = ({
     tokensInfo,
+    hasFid,
     tokenUpdateCallback,
 }) => {
     return (
@@ -20,14 +21,12 @@ const ListCards: React.FC<ListCardsProps> = ({
                     item
                     key={index}
                     xs={12}
-                    sm={6}
-                    md={4}
-                    lg={4}
                     sx={{ width: '100%', padding: 2 }}
                 >
                     {' '}
                     {/* Adjusted item padding for spacing */}
                     <FoldSpaceCard
+                        hasFid={hasFid}
                         tokenInfo={tokenInfo}
                         tokenUpdateCallback={tokenUpdateCallback}
                     />

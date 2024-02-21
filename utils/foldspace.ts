@@ -1,5 +1,19 @@
-import { createPublicClient, http } from 'viem';
+import {
+    createPublicClient,
+    http,
+    verifyTypedData,
+    bytesToHex,
+    hexToBytes,
+    SignTypedDataParameters,
+    WalletClient,
+} from 'viem';
 import { optimism } from 'viem/chains';
+import { ResultAsync, Result, err } from 'neverthrow';
+import { MyAsyncResult, MyResult } from './error';
+import {
+    ID_REGISTRY_EIP_712_TYPES,
+    IdRegistryTransferMessage,
+} from './farcaster';
 import { TokenInfo } from './types';
 import FoldSpace from '../abi/FoldSpace.json';
 import FarcasterIdRegistry from '../abi/FarcasterIdRegistry.json';
@@ -26,6 +40,17 @@ const farcasterIdRegistryConfig = {
     address: '0x00000000Fc6c5F01Fc30151999387Bb99A9f489b' as `0x${string}`,
     abi: FarcasterIdRegistry.abi,
 };
+
+async function signTransfer(
+    wallet: WalletClient,
+    message: IdRegistryTransferMessage,
+): MyAsyncResult<Uint8Array> {
+    return _signTypedData(wallet, {
+        ...ID_REGISTRY_EIP_712_TYPES,
+        primaryType: 'Transfer',
+        message,
+    });
+}
 
 async function getTokenIdsFromOwner(
     owner: string,
@@ -95,6 +120,14 @@ async function getTokensInfo(tokenIds: bigint[]): Promise<TokenInfo[]> {
         });
     });
 
+    tokenIds.forEach((tokenId) => {
+        tokenInfoCall.push({
+            ...foldspaceContractConfig,
+            functionName: 'claimed',
+            args: [tokenId.toString()],
+        });
+    });
+
     const results = await publicClient.multicall({
         contracts: tokenInfoCall,
     });
@@ -104,15 +137,42 @@ async function getTokensInfo(tokenIds: bigint[]): Promise<TokenInfo[]> {
         const tokenId = tokenIds[i];
         const uri = results[i].result as string;
         const fid = results[i + len].result as bigint;
-        info.push({ tokenId, FID: fid, URI: uri }); // Create an object for each TokenInfo
+        const claimed = results[i + len * 2].result as boolean;
+        info.push({ tokenId, FID: fid, URI: uri, claimed }); // Create an object for each TokenInfo
     }
 
     return info;
 }
 
+async function _signTypedData(
+    wallet: WalletClient,
+    params: Omit<SignTypedDataParameters, 'account'>,
+): MyAsyncResult<Uint8Array> {
+    const account = wallet.account;
+    if (!account) {
+        return err(new Error('wallet not connected'));
+    }
+    const hexSignature = await ResultAsync.fromPromise(
+        wallet.signTypedData({ ...params, account }),
+        (e) => new Error('error on signing', e as Error),
+    );
+    return hexSignature.andThen((hex) => hexStringToBytes(hex));
+}
+
+export const hexStringToBytes = (hex: string): MyResult<Uint8Array> => {
+    return Result.fromThrowable(
+        (hex: string) =>
+            hexToBytes(
+                hex.startsWith('0x') ? (hex as `0x${string}`) : `0x${hex}`,
+            ),
+        (e) => new Error('unknown', e as Error),
+    )(hex);
+};
+
 export {
     publicClient,
     foldspaceContractConfig,
+    signTransfer,
     getTokenIdsFromOwner,
     getTokensInfo,
     farcasterIdRegistryConfig,

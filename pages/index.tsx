@@ -253,7 +253,12 @@ const Home: NextPage = () => {
                         <img
                             src="/images/gate.webp"
                             alt="FoldSpace Landing Image"
-                            style={{ maxWidth: '30%', marginTop: '20px' }}
+                            style={{
+                                width: '100%',
+                                maxWidth: '100%',
+                                minWidth: '150px',
+                                marginTop: '20px',
+                            }}
                         />
                     </div>
                 )}
@@ -398,6 +403,7 @@ const Home: NextPage = () => {
                         {tabValue === 1 && (
                             <MyNFTs
                                 tokensInfo={tokensInfo}
+                                hasFid={fid && fid > 0n ? true : false}
                                 updateTokenCallback={updateTokenCallback}
                             />
                         )}

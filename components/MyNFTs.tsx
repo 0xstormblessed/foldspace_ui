@@ -5,14 +5,20 @@ import { TokenInfo } from '../utils/types';
 
 interface MyNFTsProps {
     tokensInfo: TokenInfo[] | undefined;
+    hasFid: boolean;
     updateTokenCallback: () => void;
 }
 
-const MyNFTs: React.FC<MyNFTsProps> = ({ tokensInfo, updateTokenCallback }) => {
+const MyNFTs: React.FC<MyNFTsProps> = ({
+    hasFid,
+    tokensInfo,
+    updateTokenCallback,
+}) => {
     return (
         <>
             {tokensInfo && (
                 <ListCards
+                    hasFid={hasFid}
                     tokensInfo={tokensInfo}
                     tokenUpdateCallback={updateTokenCallback}
                 />
