@@ -5,7 +5,10 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import type { NextPage } from 'next';
 import Container from '@mui/material/Container';
 import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
+import TextField from '@mui/material/TextField';
 import CircularProgress from '@mui/material/CircularProgress';
+import Box from '@mui/material/Box';
 import {
     type BaseError,
     useAccount,
@@ -14,7 +17,7 @@ import {
     useWriteContract,
     useWaitForTransactionReceipt,
 } from 'wagmi';
-import { formatEther, Address } from 'viem';
+import { formatEther, Address, isAddress, getAddress } from 'viem';
 import ListCards from '../components/ListCards';
 import {
     foldspaceContractConfig,
@@ -43,6 +46,34 @@ const Home: NextPage = () => {
     const [tokensInfo, setTokensInfo] = useState<TokenInfo[]>();
     const [isTokenIdsLoading, setIsTokenIdsLoading] = useState(false);
     const [isTokensInfoLoading, setIsTokensInfoLoading] = useState(false);
+    const [recipientAddress, setRecipientAddress] = useState<string>('');
+    const [isRecipentAddressValid, setIsRecipientAddressValid] =
+        useState<boolean>(true);
+    const [isPendingValidAddress, setIsPendingValidAddress] = useState(false);
+
+    const handleAddressChange = (
+        event: React.ChangeEvent<HTMLInputElement>,
+    ): void => {
+        const inputAddress: string = event.target.value.trim();
+        setRecipientAddress(inputAddress);
+
+        // If the address is empty, it's considered valid (optional field)
+        if (!inputAddress && inputAddress.length === 0) {
+            setIsRecipientAddressValid(true);
+            return;
+        }
+
+        // Validate the address format if it's not empty
+        try {
+            if (isAddress(inputAddress)) {
+                setIsRecipientAddressValid(true);
+            } else {
+                setIsRecipientAddressValid(false);
+            }
+        } catch {
+            setIsRecipientAddressValid(false);
+        }
+    };
 
     const {
         data,
@@ -129,6 +160,7 @@ const Home: NextPage = () => {
 
     async function submit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
+        console.log('click submit');
 
         if (FOLDSPACE_CONTRACT === undefined) {
             throw new Error('FOLDSPACE_CONTRACT is not defined');
@@ -137,11 +169,22 @@ const Home: NextPage = () => {
             throw new Error('unable to fetch price');
         }
 
+        let recipient = address;
+
+        if (
+            recipientAddress &&
+            recipientAddress.length > 0 &&
+            isRecipentAddressValid
+        ) {
+            recipient = getAddress(recipientAddress);
+            console.log('recipient:', recipient);
+        }
+
         if (price) {
             writeContract({
                 ...foldspaceContractConfig,
-                functionName: 'mint',
-                args: [],
+                functionName: 'mintFor',
+                args: [recipient],
                 value: price,
             });
         }
@@ -171,7 +214,7 @@ const Home: NextPage = () => {
             <Container maxWidth="sm">
                 {isConnected && address && (
                     <>
-                        <h1>My FoldSpace NFTs</h1>
+                        <Box sx={{ typography: 'h2' }}>FoldSpace NFTs</Box>
                         {isPendingRead ||
                         isTokenIdsLoading ||
                         isTokensInfoLoading ? (
@@ -192,12 +235,23 @@ const Home: NextPage = () => {
                             <>
                                 {
                                     <div>
-                                        {fid && fid > 0n
-                                            ? `Connected Wallet Registered FID: ${fid}`
-                                            : `Wallet has no registered FID`}
+                                        {/* use box for typography */}
+                                        {fid && fid > 0n ? (
+                                            <Box
+                                                sx={{ typography: 'paragraph' }}
+                                            >{`Connected Wallet Registered FID: ${fid}`}</Box>
+                                        ) : (
+                                            <Box
+                                                sx={{ typography: 'paragraph' }}
+                                            >{`Wallet has no registered FID`}</Box>
+                                        )}
                                         <div>
-                                            Number of FoldSpace NFTs Owned:{' '}
-                                            {balanceOf.toString()}
+                                            <Box
+                                                sx={{ typography: 'paragraph' }}
+                                            >
+                                                Number of FoldSpace NFTs Owned:{' '}
+                                                {balanceOf.toString()}{' '}
+                                            </Box>
                                         </div>
                                     </div>
                                 }{' '}
@@ -214,20 +268,60 @@ const Home: NextPage = () => {
                                 ) : (
                                     <>
                                         {price && (
-                                            <div>
+                                            <Box
+                                                sx={{ typography: 'paragraph' }}
+                                            >
                                                 Price to Mint in ETH:{' '}
                                                 {formatEther(price)}
-                                            </div>
+                                            </Box>
                                         )}
+
                                         <form onSubmit={submit}>
-                                            <button
-                                                disabled={isPending}
-                                                type="submit"
+                                            <Stack
+                                                spacing={2}
+                                                direction="column"
                                             >
-                                                {isPending
-                                                    ? 'Confirming...'
-                                                    : 'Mint'}
-                                            </button>
+                                                <TextField
+                                                    label="Recipient Address (Optional)"
+                                                    placeholder="Enter recipient Ethereum address (optional)"
+                                                    variant="outlined"
+                                                    fullWidth
+                                                    value={recipientAddress}
+                                                    onChange={
+                                                        handleAddressChange
+                                                    }
+                                                    error={
+                                                        !isRecipentAddressValid
+                                                    }
+                                                    helperText={
+                                                        !isRecipentAddressValid &&
+                                                        'Invalid Ethereum address'
+                                                    }
+                                                    disabled={isPending}
+                                                />
+                                                <Button
+                                                    disabled={
+                                                        isPending ||
+                                                        !isRecipentAddressValid
+                                                    }
+                                                    type="submit"
+                                                    color="primary"
+                                                    variant="contained"
+                                                    style={{
+                                                        backgroundColor:
+                                                            isRecipentAddressValid
+                                                                ? undefined
+                                                                : 'red',
+                                                        color: isRecipentAddressValid
+                                                            ? undefined
+                                                            : 'white',
+                                                    }}
+                                                >
+                                                    {isPending
+                                                        ? 'Confirming...'
+                                                        : 'Mint'}
+                                                </Button>
+                                            </Stack>
                                             {hash && (
                                                 <div>
                                                     Transaction:
