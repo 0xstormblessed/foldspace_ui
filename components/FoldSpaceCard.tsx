@@ -113,10 +113,13 @@ const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({
                 nonce: 0n,
                 deadline,
             };
+            console.log('Signing message');
             const signatureResult = await signTransfer(walletClient, message);
             if (signatureResult.isErr()) {
                 throw new Error(signatureResult?.error?.message);
             }
+
+            console.log('Signing result');
 
             const signature = signatureResult._unsafeUnwrap();
             const verified = await verifyTypedData({
@@ -127,9 +130,13 @@ const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({
                 signature,
             });
 
+            console.log('verifyfing..');
+
             if (!verified) {
                 throw new Error('Signature verification failed');
             }
+
+            console.log('verified');
 
             writeContract({
                 ...foldspaceContractConfig,
