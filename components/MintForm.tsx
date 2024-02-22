@@ -3,7 +3,7 @@ import React from 'react';
 import { Button, Stack, TextField } from '@mui/material';
 
 interface MintFormProps {
-    isPending: boolean;
+    isLoading: boolean;
     isRecipentAddressValid: boolean;
     recipientAddress: string;
     handleAddressChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -11,7 +11,7 @@ interface MintFormProps {
 }
 
 const MintForm: React.FC<MintFormProps> = ({
-    isPending,
+    isLoading,
     isRecipentAddressValid,
     recipientAddress,
     handleAddressChange,
@@ -31,10 +31,10 @@ const MintForm: React.FC<MintFormProps> = ({
                     helperText={
                         !isRecipentAddressValid && 'Invalid Ethereum address'
                     }
-                    disabled={isPending}
+                    disabled={isLoading}
                 />
                 <Button
-                    disabled={isPending || !isRecipentAddressValid}
+                    disabled={isLoading || !isRecipentAddressValid}
                     type="submit"
                     color="primary"
                     variant="contained"
@@ -45,7 +45,7 @@ const MintForm: React.FC<MintFormProps> = ({
                         color: isRecipentAddressValid ? undefined : 'white',
                     }}
                 >
-                    {isPending ? 'Confirming...' : 'Mint'}
+                    {isLoading ? 'Confirming...' : 'Mint'}
                 </Button>
             </Stack>
         </form>

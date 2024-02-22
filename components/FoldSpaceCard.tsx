@@ -21,7 +21,7 @@ import {
 import { verifyTypedData } from 'viem';
 import TrxStatusModal from '../components/TrxStatusModal';
 import { TokenInfo } from '../utils/types';
-import { foldspaceContractConfig, signTransfer } from '../utils/foldspace';
+import { foldspaceContractConfig } from '../utils/foldspace';
 import {
     IdRegistryTransferMessage,
     ID_REGISTRY_EIP_712_TYPES,
