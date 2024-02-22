@@ -212,13 +212,13 @@ const Home: NextPage = () => {
 
     return (
         <div>
-            <div>
+            <Container maxWidth="lg">
+                {' '}
                 <div
                     style={{
                         display: 'flex',
                         justifyContent: 'flex-end',
                         padding: 12,
-                        width: '100%',
                     }}
                 >
                     <ConnectButton showBalance={true} />
@@ -243,26 +243,27 @@ const Home: NextPage = () => {
                     >
                         <Box
                             sx={{
-                                typography: 'paragraph',
+                                typography: 'body1', // Use 'body1' or 'body2' for paragraph text as 'paragraph' is not a valid value
                                 textAlign: 'center',
                                 marginTop: '20px',
                             }}
                         >
                             Connect your wallet to foldspace into Farcaster
                         </Box>
-                        <img
+                        <Box
+                            component="img"
                             src="/images/gate.webp"
                             alt="FoldSpace Landing Image"
-                            style={{
-                                width: '100%',
-                                maxWidth: '100%',
-                                minWidth: '150px',
+                            sx={{
+                                width: '100%', // Make the image responsive
+                                maxWidth: '600px', // Adjust this value based on your design requirements
+                                height: 'auto', // Maintain aspect ratio
                                 marginTop: '20px',
                             }}
                         />
                     </div>
                 )}
-            </div>
+            </Container>
             <Container maxWidth="sm">
                 {isConnected && address && (
                     <>

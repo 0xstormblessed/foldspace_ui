@@ -12,8 +12,14 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import TextField from '@mui/material/TextField';
-import { useWriteContract, useAccount, useWalletClient } from 'wagmi';
+import {
+    useWriteContract,
+    useAccount,
+    useWalletClient,
+    useWaitForTransactionReceipt,
+} from 'wagmi';
 import { verifyTypedData } from 'viem';
+import TrxStatusModal from '../components/TrxStatusModal';
 import { TokenInfo } from '../utils/types';
 import { foldspaceContractConfig, signTransfer } from '../utils/foldspace';
 import {
@@ -25,7 +31,6 @@ interface FoldSpaceCardProps {
     tokenInfo: TokenInfo;
     hasFid: boolean;
     tokenUpdateCallback: () => void;
-    //onClaim: (tokenId: bigint) => Promise<void>;
 }
 
 const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({
@@ -44,11 +49,13 @@ const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({
     const [openDialog, setOpenDialog] = useState(false);
     const [ethereumAddress, setEthereumAddress] = useState('');
     const [isClaimLoading, setIsClaimLoading] = useState(false);
+    const [isOpenTrxStatusModal, setIsOpenTrxStatusModal] = useState(false);
 
     const {
         data: hash,
         isPending: isPendingTransaction,
         error: transactionError,
+
         writeContract,
     } = useWriteContract();
 
@@ -80,6 +87,7 @@ const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({
                 functionName: 'transferFrom',
                 args: [address, ethereumAddress, tokenId],
             });
+            setIsOpenTrxStatusModal(true);
         } catch (error) {
             console.error('Transfer failed:', error);
         } finally {
@@ -107,7 +115,7 @@ const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({
             };
             const signatureResult = await signTransfer(walletClient, message);
             if (signatureResult.isErr()) {
-                throw new Error(signatureResult.error.toString());
+                throw new Error(signatureResult?.error?.message);
             }
 
             const signature = signatureResult._unsafeUnwrap();
@@ -128,6 +136,7 @@ const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({
                 functionName: 'claimFid',
                 args: [tokenId, deadline, signature],
             });
+            setIsOpenTrxStatusModal(true);
         } catch (error) {
             console.error('Claim error:', error); // Handle error
         } finally {
@@ -135,18 +144,37 @@ const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({
         }
     };
 
+    const handleTrxStatusModalClose = () => {
+        setIsOpenTrxStatusModal(false); // Close the TrxStatusModal
+        tokenUpdateCallback();
+    };
+
+    const { isLoading: isConfirming, isSuccess: isConfirmed } =
+        useWaitForTransactionReceipt({
+            hash,
+        });
+
+    const disableClaim =
+        hasFid ||
+        claimed ||
+        isClaimLoading ||
+        isLoadingWallet ||
+        isPendingTransaction;
+    const disableTransfer =
+        isTransferLoading || isLoadingWallet || isPendingTransaction;
+
     return (
         <Card sx={{ minWidth: 275, margin: 2 }}>
             <CardContent>
                 <Typography variant="h5" component="div">
-                    Token ID: {tokenId.toString()}
+                    Token ID: {tokenId?.toString()}
                 </Typography>
                 <Divider sx={{ my: 1 }} />
                 <Typography
                     variant="body1"
                     sx={{ display: 'flex', justifyContent: 'space-between' }}
                 >
-                    FID: {FID.toString()}
+                    FID: {FID?.toString()}
                 </Typography>
                 <Box
                     sx={{
@@ -160,8 +188,27 @@ const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({
                         variant="contained"
                         color="secondary"
                         onClick={handleOpenDialog}
+                        disabled={disableTransfer}
+                        sx={{ position: 'relative' }}
                     >
-                        Transfer
+                        {disableTransfer ? (
+                            <>
+                                <CircularProgress
+                                    size={24}
+                                    sx={{
+                                        color: 'white', // Assuming you want the spinner to be white for better visibility on a secondary button
+                                        position: 'absolute',
+                                        top: '50%',
+                                        left: '50%',
+                                        marginTop: '-12px', // Half of size to vertically center
+                                        marginLeft: '-12px', // Half of size to horizontally center
+                                    }}
+                                />
+                                Loading...{' '}
+                            </>
+                        ) : (
+                            'Transfer'
+                        )}
                     </Button>
                 </Box>
                 <Box
@@ -176,10 +223,10 @@ const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({
                         variant="contained"
                         color="primary"
                         onClick={handleClaimClick}
-                        disabled={hasFid || claimed || isClaimLoading}
+                        disabled={disableClaim}
                         sx={{ position: 'relative' }}
                     >
-                        {isClaimLoading ? (
+                        {disableClaim ? (
                             <>
                                 <CircularProgress
                                     size={24}
@@ -249,6 +296,16 @@ const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({
                     </Button>
                 </DialogActions>
             </Dialog>
+            {hash && (
+                <TrxStatusModal
+                    isOpen={isOpenTrxStatusModal}
+                    onClose={handleTrxStatusModalClose}
+                    callback={tokenUpdateCallback}
+                    hash={hash}
+                    confirmingText="Confirming transaction..."
+                    confirmedText="Transaction confirmed!"
+                />
+            )}
         </Card>
     );
 };
