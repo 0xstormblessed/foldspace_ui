@@ -1,8 +1,6 @@
 import {
     createPublicClient,
     http,
-    verifyTypedData,
-    bytesToHex,
     hexToBytes,
     SignTypedDataParameters,
     WalletClient,
@@ -10,10 +8,6 @@ import {
 import { optimism } from 'viem/chains';
 import { ResultAsync, Result, err } from 'neverthrow';
 import { MyAsyncResult, MyResult } from './error';
-import {
-    ID_REGISTRY_EIP_712_TYPES,
-    IdRegistryTransferMessage,
-} from './farcaster';
 import { TokenInfo } from './types';
 import FoldSpace from '../abi/FoldSpace.json';
 import FarcasterIdRegistry from '../abi/FarcasterIdRegistry.json';
@@ -40,17 +34,6 @@ const farcasterIdRegistryConfig = {
     address: '0x00000000Fc6c5F01Fc30151999387Bb99A9f489b' as `0x${string}`,
     abi: FarcasterIdRegistry.abi,
 };
-
-async function signTransfer(
-    wallet: WalletClient,
-    message: IdRegistryTransferMessage,
-): MyAsyncResult<Uint8Array> {
-    return _signTypedData(wallet, {
-        ...ID_REGISTRY_EIP_712_TYPES,
-        primaryType: 'Transfer',
-        message,
-    });
-}
 
 async function getTokenIdsFromOwner(
     owner: string,
@@ -172,7 +155,6 @@ export const hexStringToBytes = (hex: string): MyResult<Uint8Array> => {
 export {
     publicClient,
     foldspaceContractConfig,
-    signTransfer,
     getTokenIdsFromOwner,
     getTokensInfo,
     farcasterIdRegistryConfig,
