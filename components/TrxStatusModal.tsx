@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import {
     Modal,
     Box,
@@ -33,24 +33,28 @@ const TransactionStatusModal: React.FC<TransactionStatusModalProps> = ({
         return null;
     }
 
+    const [isOpenLocal, setIsOpenLocal] = React.useState(true);
+
     const trxHash = hash as `0x${string}`;
 
     const { isLoading: isConfirming, isSuccess: isConfirmed } =
         useWaitForTransactionReceipt({ hash: trxHash });
 
-    if (isConfirmed && callback) {
-        callback();
-    }
+    const handleCloseModal = () => {
+        setIsOpenLocal(false);
+    };
 
-    // Construct the Etherscan URL based on the network
-    const etherscanBaseUrl = 'https://optimistic.etherscan.io/tx/';
-
-    const etherscanUrl = `${etherscanBaseUrl}${hash}`;
+    const onCloseModal = () => {
+        onClose();
+        if (isConfirmed && callback) {
+            callback();
+        }
+    };
 
     return (
         <Modal
-            open={isOpen}
-            onClose={onClose}
+            open={isOpen && isOpenLocal}
+            onClose={onCloseModal}
             aria-labelledby="transaction-status-modal"
             aria-describedby="displays-ethereum-transaction-status"
             sx={{
@@ -97,7 +101,11 @@ const TransactionStatusModal: React.FC<TransactionStatusModalProps> = ({
                         />
                     </>
                 )}
-                <Button variant="outlined" onClick={onClose} sx={{ mt: 2 }}>
+                <Button
+                    variant="outlined"
+                    onClick={handleCloseModal}
+                    sx={{ mt: 2 }}
+                >
                     Close
                 </Button>
             </Box>

@@ -49,14 +49,24 @@ const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({
     const [openDialog, setOpenDialog] = useState(false);
     const [ethereumAddress, setEthereumAddress] = useState('');
     const [isClaimLoading, setIsClaimLoading] = useState(false);
-    const [isOpenTrxStatusModal, setIsOpenTrxStatusModal] = useState(false);
+    const [isOpenTrxStatusModalTransfer, setIsOpenTrxStatusModalTransfer] =
+        useState(false);
+    const [isOpenTrxStatusModalClaim, setIsOpenTrxStatusModalClaim] =
+        useState(false);
 
     const {
-        data: hash,
-        isPending: isPendingTransaction,
-        error: transactionError,
+        data: hashForTransfer,
+        isPending: isPendingTransactionTransfer,
+        error: tranferError,
 
-        writeContract,
+        writeContract: writeContractForTransfer,
+    } = useWriteContract();
+
+    const {
+        data: hashForClaim,
+        isPending: isPendingTransactionClaim,
+        error: claimError,
+        writeContract: writeContractForClaim,
     } = useWriteContract();
 
     const handleOpenDialog = () => {
@@ -82,12 +92,12 @@ const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({
             if (ethereumAddress === '') {
                 throw new Error('Ethereum address is empty');
             }
-            writeContract({
+            writeContractForTransfer({
                 ...foldspaceContractConfig,
                 functionName: 'transferFrom',
                 args: [address, ethereumAddress, tokenId],
             });
-            setIsOpenTrxStatusModal(true);
+            setIsOpenTrxStatusModalTransfer(true);
         } catch (error) {
             console.error('Transfer failed:', error);
         } finally {
@@ -138,12 +148,14 @@ const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({
 
             console.log('verified');
 
-            writeContract({
+            writeContractForClaim({
                 ...foldspaceContractConfig,
                 functionName: 'claimFid',
                 args: [tokenId, deadline, signature],
             });
-            setIsOpenTrxStatusModal(true);
+
+            console.log('writing contract to claim FID');
+            setIsOpenTrxStatusModalClaim(true);
         } catch (error) {
             console.error('Claim error:', error); // Handle error
         } finally {
@@ -151,24 +163,18 @@ const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({
         }
     };
 
-    const handleTrxStatusModalClose = () => {
-        setIsOpenTrxStatusModal(false); // Close the TrxStatusModal
+    const handleTrxStatusModalTransferClose = () => {
+        setIsOpenTrxStatusModalTransfer(false); // Close the transfer modal
         tokenUpdateCallback();
     };
 
-    const { isLoading: isConfirming, isSuccess: isConfirmed } =
-        useWaitForTransactionReceipt({
-            hash,
-        });
+    const handleTrxStatusModalClaimClose = () => {
+        setIsOpenTrxStatusModalClaim(false); // Close the claim modal
+    };
 
     const disableClaim =
-        hasFid ||
-        claimed ||
-        isClaimLoading ||
-        isLoadingWallet ||
-        isPendingTransaction;
-    const disableTransfer =
-        isTransferLoading || isLoadingWallet || isPendingTransaction;
+        hasFid || claimed || isClaimLoading || isPendingTransactionClaim;
+    const disableTransfer = isTransferLoading || isPendingTransactionTransfer;
 
     return (
         <Card sx={{ minWidth: 275, margin: 2 }}>
@@ -303,14 +309,23 @@ const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({
                     </Button>
                 </DialogActions>
             </Dialog>
-            {hash && (
+            {hashForTransfer && (
                 <TrxStatusModal
-                    isOpen={isOpenTrxStatusModal}
-                    onClose={handleTrxStatusModalClose}
+                    isOpen={isOpenTrxStatusModalTransfer}
+                    onClose={handleTrxStatusModalTransferClose}
                     callback={tokenUpdateCallback}
-                    hash={hash}
-                    confirmingText="Confirming transaction..."
-                    confirmedText="Transaction confirmed!"
+                    hash={hashForTransfer}
+                    confirmingText="Confirming transfer transaction..."
+                    confirmedText="Transfer Transaction confirmed!"
+                />
+            )}
+            {hashForClaim && (
+                <TrxStatusModal
+                    isOpen={isOpenTrxStatusModalClaim}
+                    onClose={handleTrxStatusModalClaimClose}
+                    hash={hashForClaim}
+                    confirmingText="Confirming claim transaction..."
+                    confirmedText="Claim Transaction confirmed!"
                 />
             )}
         </Card>
