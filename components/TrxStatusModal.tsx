@@ -8,6 +8,7 @@ import {
     Link,
 } from '@mui/material';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline'; // Import the error icon
 import { useWaitForTransactionReceipt } from 'wagmi';
 import EtherscanLink from './EtherscanLink';
 
@@ -33,28 +34,22 @@ const TransactionStatusModal: React.FC<TransactionStatusModalProps> = ({
         return null;
     }
 
-    const [isOpenLocal, setIsOpenLocal] = React.useState(true);
+    const {
+        isLoading: isConfirming,
+        isSuccess: isConfirmed,
+        error,
+    } = useWaitForTransactionReceipt({ hash: hash as `0x${string}` });
 
-    const trxHash = hash as `0x${string}`;
-
-    const { isLoading: isConfirming, isSuccess: isConfirmed } =
-        useWaitForTransactionReceipt({ hash: trxHash });
-
-    const handleCloseModal = () => {
-        setIsOpenLocal(false);
-    };
-
-    const onCloseModal = () => {
-        onClose();
+    React.useEffect(() => {
         if (isConfirmed && callback) {
             callback();
         }
-    };
+    }, [isConfirmed, callback]);
 
     return (
         <Modal
-            open={isOpen && isOpenLocal}
-            onClose={onCloseModal}
+            open={isOpen}
+            onClose={onClose}
             aria-labelledby="transaction-status-modal"
             aria-describedby="displays-ethereum-transaction-status"
             sx={{
@@ -88,7 +83,7 @@ const TransactionStatusModal: React.FC<TransactionStatusModalProps> = ({
                         />
                     </>
                 )}
-                {isConfirmed && (
+                {!isConfirming && isConfirmed && (
                     <>
                         <CheckCircleOutlineIcon
                             color="success"
@@ -101,11 +96,19 @@ const TransactionStatusModal: React.FC<TransactionStatusModalProps> = ({
                         />
                     </>
                 )}
-                <Button
-                    variant="outlined"
-                    onClick={handleCloseModal}
-                    sx={{ mt: 2 }}
-                >
+                {!isConfirming && error && (
+                    <>
+                        <ErrorOutlineIcon color="error" sx={{ fontSize: 40 }} />
+                        <Typography variant="body1">
+                            Transaction failed!
+                        </Typography>
+                        <EtherscanLink
+                            transactionHash={hash}
+                            network="optimism"
+                        />
+                    </>
+                )}
+                <Button variant="outlined" onClick={onClose} sx={{ mt: 2 }}>
                     Close
                 </Button>
             </Box>

@@ -16,7 +16,7 @@ import {
     useWriteContract,
     useAccount,
     useWalletClient,
-    useWaitForTransactionReceipt,
+    useSignTypedData,
 } from 'wagmi';
 import { verifyTypedData } from 'viem';
 import TrxStatusModal from '../components/TrxStatusModal';
@@ -69,6 +69,8 @@ const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({
         writeContract: writeContractForClaim,
     } = useWriteContract();
 
+    const { signTypedDataAsync } = useSignTypedData();
+
     const handleOpenDialog = () => {
         setOpenDialog(true);
     };
@@ -115,7 +117,12 @@ const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({
             if (walletClient === undefined) {
                 throw new Error('Wallet client is undefined');
             }
-            const deadline = BigInt(Math.floor(Date.now() / 1000));
+            const deadline = BigInt(
+                Math.floor(Date.now() / 1000) + 4 * 60 * 60, // 4 hours * 60 minutes * 60 seconds
+            );
+
+            // const deadline = BigInt(Math.floor(Date.now() / 1000));
+            console.log('Deadline:', deadline);
 
             let message: IdRegistryTransferMessage = {
                 fid: FID,
@@ -124,14 +131,15 @@ const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({
                 deadline,
             };
             console.log('Signing message');
-            const signatureResult = await signTransfer(walletClient, message);
-            if (signatureResult.isErr()) {
-                throw new Error(signatureResult?.error?.message);
-            }
+            const signature = await signTypedDataAsync({
+                ...ID_REGISTRY_EIP_712_TYPES,
+                primaryType: 'Transfer',
+                message,
+            });
 
             console.log('Signing result');
+            console.log(signature);
 
-            const signature = signatureResult._unsafeUnwrap();
             const verified = await verifyTypedData({
                 address,
                 ...ID_REGISTRY_EIP_712_TYPES,
@@ -172,8 +180,8 @@ const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({
         setIsOpenTrxStatusModalClaim(false); // Close the claim modal
     };
 
-    const disableClaim =
-        hasFid || claimed || isClaimLoading || isPendingTransactionClaim;
+    const isClaimFidLoading = isClaimLoading || isPendingTransactionClaim;
+    const disableClaim = hasFid || claimed;
     const disableTransfer = isTransferLoading || isPendingTransactionTransfer;
 
     return (
@@ -236,10 +244,10 @@ const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({
                         variant="contained"
                         color="primary"
                         onClick={handleClaimClick}
-                        disabled={disableClaim}
+                        disabled={isClaimFidLoading || disableClaim}
                         sx={{ position: 'relative' }}
                     >
-                        {disableClaim ? (
+                        {isClaimFidLoading ? (
                             <>
                                 <CircularProgress
                                     size={24}
@@ -254,10 +262,12 @@ const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({
                                 />
                                 Claiming...{' '}
                             </>
-                        ) : hasFid || claimed ? (
-                            'Cannot Claim Fid'
+                        ) : hasFid ? (
+                            'User already has an FID' // Custom message for when hasFid is true
+                        ) : claimed ? (
+                            'Fid Already Claimed' // Message for when claimed is true
                         ) : (
-                            'Sign and Claim'
+                            'Sign and Claim' // Default message
                         )}
                     </Button>
                 </Box>
