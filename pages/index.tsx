@@ -5,12 +5,10 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import type { NextPage } from 'next';
 import { Box, Tab, Tabs, Container, CircularProgress } from '@mui/material';
 import {
-    type BaseError,
     useAccount,
     useBalance,
     useReadContracts,
     useWriteContract,
-    useWaitForTransactionReceipt,
 } from 'wagmi';
 import { isAddress, getAddress } from 'viem';
 import {
@@ -24,10 +22,9 @@ import MintForm from '../components/MintForm';
 import MyNFTs from '../components/MyNFTs';
 import MintHeaderInfo from '../components/MintHeaderInfo';
 import TrxStatusModal from '../components/TrxStatusModal';
+import Footer from '../components/Footer';
 
 const FOLDSPACE_CONTRACT = process.env.NEXT_PUBLIC_FOLDSPACE_ADDRESS;
-
-console.log('FOLDSPACE_CONTRACT:', FOLDSPACE_CONTRACT);
 
 const Home: NextPage = () => {
     const { address, isConnected } = useAccount();
@@ -360,6 +357,10 @@ const Home: NextPage = () => {
                     />
                 )}
             </Container>
+            <Box padding={18}>
+                {' '}
+                <Footer />
+            </Box>
         </div>
     );
 };

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Typography, Link } from '@mui/material';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew'; // Importing the icon
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 
 interface EtherscanLinkProps {
     transactionHash: string;
