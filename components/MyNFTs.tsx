@@ -14,6 +14,20 @@ const MyNFTs: React.FC<MyNFTsProps> = ({
     tokensInfo,
     updateTokenCallback,
 }) => {
+    if (tokensInfo && tokensInfo.length === 0) {
+        return (
+            <div
+                style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    height: '100%',
+                }}
+            >
+                <h2>Click mint to enter FoldSpace</h2>
+            </div>
+        );
+    }
     return (
         <>
             {tokensInfo && (

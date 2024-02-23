@@ -34,11 +34,11 @@ const MintHeaderInfo: React.FC<MintHeaderInfoProps> = ({
                 )}
                 <Typography variant="body1" sx={{ mb: 2 }}>
                     Number of FoldSpace NFTs Owned:{' '}
-                    {balanceOf ? balanceOf.toString() : 'loading...'}
+                    {balanceOf ? balanceOf.toString() : '0'}
                 </Typography>
                 <Typography variant="body1" sx={{ mb: 2 }}>
                     Price to Mint in ETH:{' '}
-                    {price ? formatEther(price) : 'loading...'}
+                    {price ? formatEther(price) : 'loading price...'}
                 </Typography>
             </Box>
         </Container>

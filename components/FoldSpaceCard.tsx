@@ -20,6 +20,7 @@ import {
 } from 'wagmi';
 import { verifyTypedData } from 'viem';
 import TrxStatusModal from '../components/TrxStatusModal';
+import FoldSpaceImage from './FoldSpaceImage';
 import { TokenInfo } from '../utils/types';
 import { foldspaceContractConfig } from '../utils/foldspace';
 import {
@@ -44,7 +45,7 @@ const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({
         isError,
         isLoading: isLoadingWallet,
     } = useWalletClient();
-    const { tokenId, FID, claimed } = tokenInfo;
+    const { tokenId, FID, claimed, URI } = tokenInfo;
     const [isTransferLoading, setIsTransferLoading] = useState(false);
     const [openDialog, setOpenDialog] = useState(false);
     const [ethereumAddress, setEthereumAddress] = useState('');
@@ -197,6 +198,12 @@ const FoldSpaceCard: React.FC<FoldSpaceCardProps> = ({
                 >
                     FID: {FID?.toString()}
                 </Typography>
+                <Divider sx={{ my: 1 }} />
+                <FoldSpaceImage
+                    encodedUri={URI}
+                    altText={`FoldSpace Token ${tokenId}`}
+                    placeholder="/images/image404.webp"
+                />
                 <Box
                     sx={{
                         mt: 2,
